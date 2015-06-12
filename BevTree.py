@@ -1,7 +1,11 @@
+# -*- coding: utf-8 -*-
+#节点运行状态：运行中/运行完成
+NODE_STATUS_EXECUTING = 0
+NODE_STATUS_FINISH = 1
+
 class BevNodePrecondition(object):
     def external_condition(self, input_par):
         pass
-
 
 class BevNodePreconditionTRUE(BevNodePrecondition):
     def external_condition(self, input_par):
@@ -19,11 +23,6 @@ class BevNodePreconditionNOT(BevNodePrecondition):
 
     def external_condition(self, input_par):
         return not self.lhs.external_condition(input_par)
-
-
-RUN_STATUS_EXECUTING = 0
-RUN_STATUS_FINISH = 1
-
 
 class BevNode(object):
     def __init__(self, parent_node, node_precondition, name=None):
@@ -47,7 +46,7 @@ class BevNode(object):
         return self._do_tick(input_par, out_par)
 
     def _do_tick(self, input_par, out_par):
-        return RUN_STATUS_FINISH
+        return NODE_STATUS_EXECUTING
 
 
 class BevNodeTerminal(BevNode):
@@ -75,6 +74,27 @@ class BevNodePrioritySelector(BevNode):
         return False
 
     def _do_tick(self, input_par, out_par):
-        self.child_nodes[self.current_select_index].tick(input_par,out_par)
+        return self.child_nodes[self.current_select_index].tick(input_par, out_par)
+
+class BevNodeSequence(BevNode):
+    def __init__(self, parent_node, node_precondition, name):
+        BevNode.__init__(self, parent_node, node_precondition, name)
+        self.current_select_index = -1
+
+    def _do_evaluate(self, input_par):
+        if self.current_select_index == -1:
+            self.current_select_index = 0
+        return self.child_nodes[self.current_select_index].evaluate(input_par)
+
+    def _do_tick(self, input_par, out_par):
+        if self.child_nodes[self.current_select_index].tick(input_par, out_par) == NODE_STATUS_FINISH:
+            self.current_select_index += 1
+            if self.current_select_index >= len(self.child_nodes):
+                return NODE_STATUS_FINISH
+        return self.child_nodes[self.current_select_index].tick(input_par, out_par)
+
+# class BevNodeParallelNode(BevNode):
+#     d
+
 
 

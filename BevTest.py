@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from BevTree import *
 import time
 
@@ -30,8 +31,10 @@ class NODE_Minus(BevNodeTerminal):
         output_par.count = input_par.count - 1
         print("NODE_Minus count:" + str(output_par.count))
 
+        return NODE_STATUS_EXECUTING
 
-def TEST1():
+
+def test0():
     root = BevNodePrioritySelector(None, None, "Root")
     NODE_Add(root, BevNodePreconditionNOT(CON_Reached_TEN()))
     NODE_Minus(root, CON_Reached_TEN())
@@ -43,5 +46,11 @@ def TEST1():
             root.tick(input_par, output_par)
             input_par.count = output_par.count
 
+# def test1():
+#     root =
 
-TEST1()
+if __name__ == '__main__':
+    test1()
+
+
+
