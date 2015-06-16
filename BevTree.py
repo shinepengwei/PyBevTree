@@ -52,6 +52,13 @@ class BevNode(object):
     def _do_tick(self, input_par, out_par):
         return NODE_STATUS_EXECUTING
 
+    #切换，从一个运行节点切换到另一个节点运行
+    def transition(self, input_par):
+        self._do_transition(input_par)
+
+    def _do_transition(self,input_par):
+        pass
+
 
 class BevNodeTerminal(BevNode):
     def __init__(self, parent_node, node_precondition, name):
@@ -76,6 +83,8 @@ class BevNodePrioritySelector(BevNode):
     def _do_evaluate(self, input_par):
         for index, child in enumerate(self.child_nodes):
             if child.evaluate(input_par):
+                if index != self.current_select_index:
+                    child.transition(input_par)
                 self.current_select_index = index
                 print "BevNodePrioritySelector:" + str(index)
                 return True
@@ -83,6 +92,12 @@ class BevNodePrioritySelector(BevNode):
 
     def _do_tick(self, input_par, out_par):
         return self.child_nodes[self.current_select_index].tick(input_par, out_par)
+
+    def _do_transition(self, input_par):
+        if self.current_select_index != -1:
+            self.child_nodes[self.current_select_index].transition(input_par)
+        self.current_select_index = -1
+
 
 
 '''
@@ -108,15 +123,20 @@ class BevNodeSequence(BevNode):
         return self.child_nodes[self.current_select_index].evaluate(input_par)
 
     def _do_tick(self, input_par, out_par):
-        # 重新来过
-        if self.current_select_index >= len(self.child_nodes):
+        if self.current_select_index >= len(self.child_nodes):# 重新来过
             self.current_select_index = 0
-
         if self.child_nodes[self.current_select_index].tick(input_par, out_par) == NODE_STATUS_FINISH:
+            self.child_nodes[self.current_select_index].transition(input_par)
             self.current_select_index += 1
             if self.current_select_index >= len(self.child_nodes):
                 return NODE_STATUS_FINISH
         return self.child_nodes[self.current_select_index].tick(input_par, out_par)
+
+    def _do_transition(self, input_par):
+        if self.current_select_index != -1:
+            self.child_nodes[self.current_select_index].transition(input_par)
+        self.current_select_index = -1
+
 
 
 '''
@@ -163,3 +183,8 @@ class BevNodeParallelNode(BevNode):
                     else:
                         self.statuses[index] = NODE_STATUS_FINISH
             return ret
+
+    def _do_transition(self,input_par):
+        for i,child in enumerate(self.child_nodes):
+            self.statuses[i] = NODE_STATUS_EXECUTING
+            child.transition(input_par)
